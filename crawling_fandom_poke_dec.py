@@ -1,3 +1,4 @@
+
 import requests
 from bs4 import BeautifulSoup
 import csv
@@ -34,21 +35,26 @@ def get_pokemon_data(pokemon_url):
     # 포켓몬 이름 수집
     name = soup.find('h1', class_='page-header__title').text.strip()
 
-    # 도감 설명 (여러 버전) 수집
-    descriptions = soup.find_all('div', class_='pi-item pi-data pi-item-spacing pi-border-color')
+    # 도감 설명 (적, 녹, 청, 피카츄 버전) 수집
     red_desc = green_desc = blue_desc = yellow_desc = "N/A"
+    
+    # 도감 설명이 포함된 섹션 찾기
+    try:
+        description_sections = soup.find_all('div', class_='pi-item pi-data pi-item-spacing pi-border-color')
+        for section in description_sections:
+            title = section.find('h3').text.strip()  # 각 섹션의 제목
+            description = section.find('div', class_='pi-data-value pi-font').text.strip()
 
-    for desc in descriptions:
-        if "적" in desc.text:
-            red_desc = desc.find('div', class_='pi-data-value pi-font').text.strip()
-        elif "녹" in desc.text:
-            green_desc = desc.find('div', class_='pi-data-value pi-font').text.strip()
-        elif "청" in desc.text:
-            blue_desc = desc.find('div', class_='pi-data-value pi-font').text.strip()
-        elif "피카츄" in desc.text:
-            yellow_desc = desc.find('div', class_='pi-data-value pi-font').text.strip()
+            if "적" in title or "녹" in title:
+                red_desc = description
+                green_desc = description
+            elif "청" in title:
+                blue_desc = description
+            elif "피카츄" in title:
+                yellow_desc = description
+    except Exception as e:
+        print(f"{name}의 도감 설명을 크롤링하는 중 오류 발생: {e}")
 
-    # 형식에 맞춘 데이터 반환
     return {
         'name': name,
         'red_desc': red_desc,
@@ -58,7 +64,7 @@ def get_pokemon_data(pokemon_url):
     }
 
 # CSV 파일 작성
-with open('pokedex_data.csv', mode='w', newline='', encoding='utf-8') as file:
+with open('pokedex_des.csv', mode='w', newline='', encoding='utf-8') as file:
     writer = csv.writer(file)
     writer.writerow(['name', 'red_desc', 'green_desc', 'blue_desc', 'yellow_desc'])
 
@@ -68,6 +74,6 @@ with open('pokedex_data.csv', mode='w', newline='', encoding='utf-8') as file:
             pokemon_data = get_pokemon_data(url)
             writer.writerow([pokemon_data['name'], pokemon_data['red_desc'], pokemon_data['green_desc'], pokemon_data['blue_desc'], pokemon_data['yellow_desc']])
             print(f"{pokemon_data['name']} 정보 저장 완료")
-            time.sleep(1)  # 사이트에 부담을 줄이기 위해 1초간 딜레이를 추가
+            time.sleep(0.3)  # 딜레이 0.3초로 설정
         except Exception as e:
             print(f"크롤링 중 오류 발생: {e}")
