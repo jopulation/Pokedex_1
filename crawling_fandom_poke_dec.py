@@ -1,4 +1,3 @@
-
 import requests
 from bs4 import BeautifulSoup
 import csv
@@ -6,7 +5,7 @@ import time
 
 # 1세대 포켓몬 이름 리스트
 pokemon_names = [
-    "이상해씨", "이상해풀", "이상해꽃", "파이리", "리자드", "리자몽", "꼬부기", "어니부기", "거북왕", "캐터피", 
+"이상해씨", "이상해풀", "이상해꽃", "파이리", "리자드", "리자몽", "꼬부기", "어니부기", "거북왕", "캐터피", 
     "단데기", "버터플", "뿔충이", "딱충이", "독침붕", "구구", "피죤", "피죤투", "꼬렛", "레트라",
     "깨비참", "깨비드릴조", "아보", "아보크", "피카츄", "라이츄", "모래두지", "고지", "니드런♀", "니드리나",
     "니드퀸", "니드런♂", "니드리노", "니드킹", "삐삐", "픽시", "식스테일", "나인테일", "푸린", "푸크린",
@@ -32,28 +31,30 @@ def get_pokemon_data(pokemon_url):
     response = requests.get(pokemon_url)
     soup = BeautifulSoup(response.content, 'html.parser')
 
-    # 포켓몬 이름 수집
+    # 포켓몬 이름 수집 및 ' (포켓몬)' 부분 제거
     name = soup.find('h1', class_='page-header__title').text.strip()
+    if ' (포켓몬)' in name:
+        name = name.replace(' (포켓몬)', '')
 
-    # 도감 설명 (적, 녹, 청, 피카츄 버전) 수집
+    # 도감 설명 수집 (적/녹, 청, 피카츄 버전)
     red_desc = green_desc = blue_desc = yellow_desc = "N/A"
     
     # 도감 설명이 포함된 섹션 찾기
-    try:
-        description_sections = soup.find_all('div', class_='pi-item pi-data pi-item-spacing pi-border-color')
-        for section in description_sections:
-            title = section.find('h3').text.strip()  # 각 섹션의 제목
+    description_sections = soup.find_all('div', class_='pi-item pi-data pi-item-spacing pi-border-color')
+    
+    for section in description_sections:
+        title_element = section.find('h3')  # 제목 요소 (예: 적/녹, 청, 피카츄 등)
+        if title_element:
+            title = title_element.text.strip()
             description = section.find('div', class_='pi-data-value pi-font').text.strip()
 
             if "적" in title or "녹" in title:
                 red_desc = description
-                green_desc = description
+                green_desc = description  # 적/녹 버전은 같은 설명
             elif "청" in title:
                 blue_desc = description
             elif "피카츄" in title:
                 yellow_desc = description
-    except Exception as e:
-        print(f"{name}의 도감 설명을 크롤링하는 중 오류 발생: {e}")
 
     return {
         'name': name,
@@ -64,7 +65,7 @@ def get_pokemon_data(pokemon_url):
     }
 
 # CSV 파일 작성
-with open('pokedex_des.csv', mode='w', newline='', encoding='utf-8') as file:
+with open('pokedex_dec.csv', mode='w', newline='', encoding='utf-8') as file:
     writer = csv.writer(file)
     writer.writerow(['name', 'red_desc', 'green_desc', 'blue_desc', 'yellow_desc'])
 
@@ -74,6 +75,6 @@ with open('pokedex_des.csv', mode='w', newline='', encoding='utf-8') as file:
             pokemon_data = get_pokemon_data(url)
             writer.writerow([pokemon_data['name'], pokemon_data['red_desc'], pokemon_data['green_desc'], pokemon_data['blue_desc'], pokemon_data['yellow_desc']])
             print(f"{pokemon_data['name']} 정보 저장 완료")
-            time.sleep(0.3)  # 딜레이 0.3초로 설정
+            time.sleep(0.1)  # 딜레이 0.1초로 설정
         except Exception as e:
             print(f"크롤링 중 오류 발생: {e}")
