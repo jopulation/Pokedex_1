@@ -38,15 +38,15 @@ FORM_MAP = {
 }
 
 class Pokemon:
-    def __init__(self, number, name, type1, type2, form, red_desc, green_desc, blue_desc, yellow_desc):
+    def __init__(self, number, name, type1, type2, form, category, red_green_desc, blue_desc, yellow_desc):
         self.number = number
         self.name = name
         self.p_type = [TYPE_MAP[type1]]  # 타입1 변환
         if type2:
             self.p_type.append(TYPE_MAP[type2])  # 타입2 변환
         self.form = FORM_MAP[form]  # 형태 정보 (번호로 저장, 문자로 변환)
-        self.red_desc = red_desc
-        self.green_desc = green_desc
+        self.category = category  # 분류 정보
+        self.red_green_desc = red_green_desc  # 적/녹 버전 도감 설명
         self.blue_desc = blue_desc
         self.yellow_desc = yellow_desc
 
@@ -54,8 +54,8 @@ class Pokemon:
         return (f"#{self.number} {self.name}\n"
                 f"타입: {', '.join(self.p_type)}\n"
                 f"형태: {self.form}\n"
-                f"적 버전: {self.red_desc}\n"
-                f"녹 버전: {self.green_desc}\n"
+                f"분류: {self.category}\n"
+                f"적/녹 버전: {self.red_green_desc}\n"
                 f"청 버전: {self.blue_desc}\n"
                 f"피카츄 버전: {self.yellow_desc}")
 
@@ -70,11 +70,11 @@ def load_pokedex_from_csv(file_path):
             type1 = int(row["type1"])
             type2 = int(row["type2"]) if row["type2"] else None
             form = int(row["form"])
-            red_desc = row["red_desc"]
-            green_desc = row["green_desc"]
+            category = row["category"]
+            red_green_desc = row["red_green_desc"]
             blue_desc = row["blue_desc"]
             yellow_desc = row["yellow_desc"]
-            pokedex.append(Pokemon(number, name, type1, type2, form, red_desc, green_desc, blue_desc, yellow_desc))
+            pokedex.append(Pokemon(number, name, type1, type2, form, category, red_green_desc, blue_desc, yellow_desc))
     return pokedex
 
 # 포켓몬의 번호로 모든 정보를 출력하는 기능 추가
@@ -84,6 +84,13 @@ def show_pokemon_details(pokedex, number):
             print(pokemon)
             return
     print("해당 번호의 포켓몬을 찾을 수 없습니다.")
+
+# 포켓몬 번호와 이름만 출력하는 함수
+def search_by_number(pokedex, number):
+    for pokemon in pokedex:
+        if pokemon.number == number:
+            return f"#{pokemon.number} {pokemon.name}"
+    return "해당 번호의 포켓몬을 찾을 수 없습니다."
 
 # 14가지 형태 출력 및 검색
 def print_form_options():
@@ -96,7 +103,7 @@ def search_by_form(pokedex, form_input):
     results = []
     for pokemon in pokedex:
         if pokemon.form == FORM_MAP[form_input]:
-            results.append(pokemon)
+            results.append(f"#{pokemon.number} {pokemon.name}")
     return results if results else "해당 형태에 맞는 포켓몬을 찾을 수 없습니다."
 
 # 포켓몬 도감 메뉴
@@ -106,9 +113,8 @@ def menu():
     while True:
         print("\n포켓몬 도감")
         print("1. 번호로 검색")
-        print("2. 초성으로 검색")
-        print("3. 형태로 검색")
-        print("4. 종료")
+        print("2. 형태로 검색")
+        print("3. 종료")
         
         choice = input("선택: ")
         
@@ -117,6 +123,7 @@ def menu():
                 number = int(input("포켓몬 번호 입력: "))
                 result = search_by_number(pokedex, number)
                 print(result)
+
                 # 추가 기능: 포켓몬의 번호로 모든 정보 출력
                 show_number = input("해당 포켓몬의 번호를 입력하면 모든 정보를 출력합니다 (0을 입력하면 메뉴로 돌아갑니다): ")
                 if show_number == '0':
@@ -128,23 +135,6 @@ def menu():
                 print("잘못된 번호입니다.")
         
         elif choice == '2':
-            chosung = input("초성 입력 (예: ㅍ): ").strip()
-            results = search_by_chosung(pokedex, chosung)
-            if isinstance(results, list):
-                for pokemon in results:
-                    print(pokemon)
-            else:
-                print(results)
-
-            # 추가 기능: 포켓몬의 번호로 모든 정보 출력
-            show_number = input("해당 포켓몬의 번호를 입력하면 모든 정보를 출력합니다 (0을 입력하면 메뉴로 돌아갑니다): ")
-            if show_number == '0':
-                print("메뉴로 돌아갑니다.")
-                continue
-            elif show_number.isdigit():
-                show_pokemon_details(pokedex, int(show_number))
-
-        elif choice == '3':
             print_form_options()
             try:
                 form_input = int(input("검색할 형태 번호를 입력하세요: "))
@@ -165,7 +155,7 @@ def menu():
             except ValueError:
                 print("잘못된 입력입니다.")
         
-        elif choice == '4':
+        elif choice == '3':
             break
         
         else:
